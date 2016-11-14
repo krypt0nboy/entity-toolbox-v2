@@ -1,0 +1,26 @@
+<?php
+
+module_load_include('inc', 'entity_toolbox_example', 'entity_toolbox_example.info');
+module_load_include('inc', 'entity_toolbox_example', 'entity_toolbox_example.functions');
+
+///**
+// * Implements hook_entity_property_info().
+// */
+//function entity_toolbox_example_entity_property_info() {
+//  $info = array();
+//  $info += entity_property_info_build('foo');
+//  $info += entity_property_info_build('foo_type');
+//
+//  return $info;
+//}
+
+///**
+// * Implements hook_entity_operation_info().
+// */
+//function entity_toolbox_example_entity_operation_info() {
+//  $info = array();
+//  $info += entity_operation_info_build('foo');
+//  $info += entity_operation_info_build('foo_type');
+//
+//  return $info;
+//}

@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * @file
+ * bar.inc
+ * 
+ * This file is the main file for module bar.
+ * 
+ * @author kryptonboy <me@harold-cohen.com>
+ */
+
+/**
+ * The module's name.
+ */
+define('BAR', 'bar');
+/**
+ * The module's path.
+ */
+define('BAR_PATH', module_get_path('bar'));
+
+// Loads the info.inc required by ETBX.
+module_load_include('inc', 'bar', 'bar.info');
+// Loads the entity types callbacks.
+module_load_include('inc', 'bar', 'bar.functions');
+
+/**
+ * Implements hook_menu().
+ */
+function bar_menu() {
+  $items = array();
+   $items['admin/bar/settings'] = array(
+        'title'            => 'bar settings',
+        'access arguments' => array('access administration pages'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('entity_type_settings_form', 'bar'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function bar_admin_paths() {
+  $paths                   = array();
+  $paths['bar/*']      = TRUE;
+  $paths['bar_type/*'] = TRUE;
+
+  return $paths;
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function bar_entity_info() {
+  $info = array();
+  $info += entity_info_retrieve('bar');
+  $info += entity_info_retrieve('bar_type');
+
+  return $info;
+}
+
+/**
+ * Implements hook_entity_property_info().
+ */
+function bar_entity_property_info() {
+  $info = array();
+  $info += entity_property_info_build('bar');
+  $info += entity_property_info_build('bar_type');
+
+  return $info;
+}
+
+/**
+ * Implements hook_entity_operation_info().
+ */
+function product_entity_operation_info() {
+  $info = array();
+  $info += entity_operation_info_build('bar');
+  $info += entity_operation_info_build('bar_type');
+
+  return $info;
+}

@@ -1,0 +1,89 @@
+<?php
+
+/**
+ * @file
+ * entity_toolbox.module
+ *
+ * This file contains basic functions to use entity_toolbox.
+ * This is also where most of the available hooks are implemented.
+ */
+
+/**
+ * The module's name.
+ */
+define('ENTITY_TOOLBOX', 'entity_toolbox');
+/**
+ * The module's name alias.
+ */
+define('ETBX', 'entity_toolbox');
+/**
+ * The module's path.
+ */
+define('ENTITY_TOOLBOX_PATH', drupal_get_path('module', 'entity_toolbox'));
+/**
+ * Default multi value property getter callback.
+ */
+define('DEFAULT_MULTI_VALUE_GETTER', 'entity_toolbox_multi_value_property_get');
+/**
+ * Default multi value property setter callback.
+ */
+define('DEFAULT_MULTI_VALUE_SETTER', 'entity_toolbox_multi_value_property_set');
+
+// Loads the cache variables and hooks.
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.cache');
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.toolbox');
+// Loads the toolbox.
+toolbox_load();
+// Loads the hook invokes.
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.hooks');
+// Loads the invoke functions.
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.invoke');
+// Loads the config functions and forms.
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.admin');
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.format');
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.classes');
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.hooks');
+module_load_include('inc', 'entity_toolbox', 'entity_toolbox.functions');
+
+/**
+ * Implements hook_menu().
+ */
+function entity_toolbox_menu() {
+  $items                                         = array();
+  $items['admin/config/entity_toolbox']          = array(
+    'title'            => t('Entity toolbox'),
+    'description'      => t('Entity Toolbox'),
+    'type'             => MENU_NORMAL_ITEM,
+    'page callback'    => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file path'        => drupal_get_path('module', 'system'),
+    'file'             => 'system.admin.inc',
+  );
+  $items['admin/config/entity_toolbox/settings'] = array(
+    'title'            => t('Settings'),
+    'description'      => t('Settings.'),
+    'type'             => MENU_NORMAL_ITEM,
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('entity_toolbox_admin_settings'),
+    'access arguments' => array('administer.etbx'),
+  );
+
+  //@todo add ui to manage entity types.
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function entity_toolbox_permission() {
+  $permissions                                 = array();
+  $permissions['administer.etbx']              = array(
+    'title' => t('Administer Entity Toolbox'),
+  );
+  $permissions['administer.etbx.entity_types'] = array(
+    'title' => t('Administer entities types managed by Entity toolbox.'),
+  );
+
+  return $permissions;
+}

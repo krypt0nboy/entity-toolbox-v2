@@ -1,0 +1,62 @@
+<?php
+
+/**
+ * @file
+ * entity_toolbox.install
+ *
+ * Install, update and uninstall functions for the entity_toolbox module.
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * "installed_entities" keeps track of entities installed and live in the system.
+ * "ENTITY_TOOLBOX_DB__CACHE" provides a tables to cache info gathered and processed by the module.
+ */
+function entity_toolbox_schema() {
+  $schema                           = array();
+  $schema[ENTITY_TOOLBOX_DB__CACHE] = drupal_get_schema_unprocessed('system', 'cache');
+
+  return $schema;
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function entity_toolbox_schema_alter(&$schema) {
+  $etbx_schema                              = &$schema['entity_toolbox'];
+  $etbx_schema[ENTITY_TOOLBOX_DB__REGISTRY] = etbx_registry_table();
+  $etbx_schema[ENTITY_TOOLBOX_DB__VERSIONS] = etbx_registry_versions_table();
+}
+
+/**
+ * Creates two registry tables to keep track of ETBX entities.
+ */
+function entity_toolbox_update_7001() {
+  if (!db_table_exists(ENTITY_TOOLBOX_DB__REGISTRY)) {
+    db_create_table(ENTITY_TOOLBOX_DB__REGISTRY, etbx_registry_table());
+  }
+  if (!db_table_exists(ENTITY_TOOLBOX_DB__VERSIONS)) {
+    db_create_table(ENTITY_TOOLBOX_DB__VERSIONS, etbx_registry_versions_table());
+  }
+}
+
+/**
+ * Implements hook_install().
+ */
+function entity_toolbox_install() {
+  // Setting variables for ETBX settings
+  variable_set('ajax_enabled', TRUE);
+  // Notifications during entity editing.
+  variable_set('notifications_enabled', TRUE);
+  // Cache enabled for etbx.
+  variable_set('cache_enabled', TRUE);
+  // Whether to use persistent data for etbx entities.
+  variable_set('use_persistent', TRUE);
+  // Default status is set to rebuild so that the registry is rebuild once ETBX is installed.
+  variable_set('registry_status', ETBX_REGISTRY_NEEDS_REBUILD);
+  variable_set('deliveries_autocheck', FALSE);
+  entity_toolbox_update_7001();
+  // Updates / builds the registry.
+  etbx_registry_update();
+}
