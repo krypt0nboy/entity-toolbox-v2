@@ -55,7 +55,7 @@ function schema_version_retrieve($entity_type, $version) {
   $schemas = schema_persistent_read($entity_type, $version);
   // If the requested schema version is not available, build it.
   if ($schemas === FALSE) {
-    
+
   }
 
   return $schemas;

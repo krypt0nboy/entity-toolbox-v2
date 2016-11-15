@@ -32,13 +32,28 @@ define('INIT_VERSION', 7000);
  * Returns the module versions dir path.
  *
  * @param string $module
- *   The module.
+ *   The module's name.
  *
  * @return string
  */
 function module_versions_dir_path($module) {
   $module_path    = module_get_path($module);
   $persistent_dir = paths_join($module_path, array('src', 'versions'));
+
+  return $persistent_dir;
+}
+
+/**
+ * Returns the module updates dir path.
+ *
+ * @param string $module
+ *   The module's name.
+ *
+ * @return string
+ */
+function module_updates_dir_path($module) {
+  $module_path    = module_get_path($module);
+  $persistent_dir = paths_join($module_path, array('src', 'updates'));
 
   return $persistent_dir;
 }
@@ -128,7 +143,7 @@ function entity_toolbox_version_filename($entity_type, $version, $hook, $module 
  * @return int
  */
 function etbx_entity_current_version($entity_type) {
-  $registry = etbx_registry(ETBX_REGISTRY_GET, $entity_type);
+  $registry = etbx_registry_get_info($entity_type);
   if (!empty($registry['version'])) {
     return $registry['version'];
   }
@@ -172,6 +187,7 @@ function entity_type_scan_versions($entity_type, $module) {
     'raw_entity_toolbox',
     'json'
   ), '.');
+  $version_dirs      = is_array($version_dirs) ? $version_dirs : array();
   // Checks if entity_type is actually present in each dir.
   foreach ($version_dirs as $key => $version_dir) {
     // Scans for persistent files.
@@ -300,7 +316,7 @@ function raw_entity_toolbox_persistent_get_hash($entity_type, $version, $module)
  * @return bool
  */
 function entity_is_up2date($entity_type) {
-  $registry   = etbx_registry(ETBX_REGISTRY_GET, $entity_type);
+  $registry   = etbx_registry_get_info($entity_type);
   $registered = entity_registered_versions($entity_type);
 
   return $registry['version'] == end($registered);

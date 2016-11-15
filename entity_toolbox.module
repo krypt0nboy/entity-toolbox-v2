@@ -44,13 +44,14 @@ module_load_include('inc', 'entity_toolbox', 'entity_toolbox.format');
 module_load_include('inc', 'entity_toolbox', 'entity_toolbox.classes');
 module_load_include('inc', 'entity_toolbox', 'entity_toolbox.hooks');
 module_load_include('inc', 'entity_toolbox', 'entity_toolbox.functions');
+module_load_include('inc', 'entity_toolbox', 'src/forms/etbx_registry_admin');
 
 /**
  * Implements hook_menu().
  */
 function entity_toolbox_menu() {
-  $items                                         = array();
-  $items['admin/config/entity_toolbox']          = array(
+  $items                                                  = array();
+  $items['admin/config/entity_toolbox']                   = array(
     'title'            => t('Entity toolbox'),
     'description'      => t('Entity Toolbox'),
     'type'             => MENU_NORMAL_ITEM,
@@ -59,13 +60,21 @@ function entity_toolbox_menu() {
     'file path'        => drupal_get_path('module', 'system'),
     'file'             => 'system.admin.inc',
   );
-  $items['admin/config/entity_toolbox/settings'] = array(
-    'title'            => t('Settings'),
-    'description'      => t('Settings.'),
-    'type'             => MENU_NORMAL_ITEM,
+  $items['admin/config/entity_toolbox/settings']          = array(
+    'title'            => t('Basic settings'),
+    'description'      => t('Basic settings.'),
+    'type'             => MENU_LOCAL_TASK,
     'page callback'    => 'drupal_get_form',
     'page arguments'   => array('entity_toolbox_admin_settings'),
     'access arguments' => array('administer.etbx'),
+  );
+  $items['admin/config/entity_toolbox/registry'] = array(
+    'title'            => t('Registry'),
+    'description'      => t('Registry'),
+      'type'             => MENU_LOCAL_TASK,
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('etbx_registry_admin_form'),
+    'access arguments' => array('administer.etbx.entity_types'),
   );
 
   //@todo add ui to manage entity types.

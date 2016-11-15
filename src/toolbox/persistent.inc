@@ -38,6 +38,58 @@ function persistent_write($entity_type, $version, $hook, $data, $module = NULL) 
 }
 
 /**
+ * Writes persistent data into a file.
+ *
+ * @param string $target
+ *   The target filename.
+ * @param mixed  $data
+ *   The data to write.
+ * @param bool   $encode
+ *   Whether to encode the data.
+ *
+ * @return bool
+ *   Returns  TRUE on success, FALSE on error.
+ */
+function _persistent_write($target, $data, $encode = TRUE) {
+  if (is_writable($target)) {
+    if (!file_exists($target)) {
+      touch($target);
+    }
+    $data_ = $encode ? drupal_json_decode($data) : $data;
+    $file  = fopen($target, 'w');
+    $write = fwrite($file, $data_);
+    if (!$write) {
+      //@todo handle errors
+      return FALSE;
+    }
+    fclose($file);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Reads persistent data.
+ *
+ * @param string $filename
+ *   The persistent filename.
+ *
+ * @return array|false
+ */
+function _persistent_read($filename) {
+  if (file_exists($filename)) {
+    $file       = fopen($filename, 'r');
+    $persistent = fread($file, filesize($filename));
+    fclose($file);
+
+    return drupal_json_decode($persistent);
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
  * Writes raw persistent data.
  *
  * @param string $entity_type
@@ -221,6 +273,45 @@ function schema_persistent_read($entity_type, $version, $module = NULL) {
 }
 
 /**
+ * Writes a persistent diff between two versions of the same entity.
+ *
+ * @param string      $entity_type
+ *   The entity type.
+ * @param array       $diff
+ *   The diff.
+ * @param int         $v1
+ *   The older version.
+ * @param int         $v2
+ *   The newest version.
+ * @param null|string $module
+ *   The module managing the entity type.
+ */
+function etbx_info_diff_persistent_write($entity_type, $diff, $v1, $v2, $module = NULL) {
+  $filename = etbx_info_diff_filename($entity_type, $v1, $v2, $module);
+  _persistent_write($filename, $diff);
+}
+
+/**
+ * Reads a persistent diff between two versions of the same entity.
+ *
+ * @param string      $entity_type
+ *   The entity type.
+ * @param int         $v1
+ *   The older version.
+ * @param int         $v2
+ *   The newest version.
+ * @param null|string $module
+ *   The module managing the entity type.
+ *
+ * @return array
+ */
+function etbx_info_diff_persistent_read($entity_type, $v1, $v2, $module = NULL) {
+  $filename = etbx_info_diff_filename($entity_type, $v1, $v2, $module);
+
+  return _persistent_read($filename);
+}
+
+/**
  * Prepares a module before writing/reading persistent data.
  *
  * @param string $module
@@ -235,6 +326,11 @@ function _etbx_persistent_prepare($module) {
   // If not, creates the version dir
   if (!file_exists($version_dirnames)) {
     mkdir($version_dirnames);
+  }
+  // Checks if the udpates dir exists
+  $updates_dirname = module_updates_dir_path($module);
+  if (!file_exists($updates_dirname)) {
+    mkdir($updates_dirname);
   }
   // Checks if the init version dir exists
   $version_dirs = module_get_versions_dirs($module);

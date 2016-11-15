@@ -17,6 +17,7 @@ function toolbox_load() {
   module_load_include('inc', 'entity_toolbox', 'src/toolbox/db');
   module_load_include('inc', 'entity_toolbox', 'src/toolbox/deliver');
   module_load_include('inc', 'entity_toolbox', 'src/toolbox/diff');
+  module_load_include('inc', 'entity_toolbox', 'src/toolbox/drush');
   module_load_include('inc', 'entity_toolbox', 'src/toolbox/entity_settings');
   module_load_include('inc', 'entity_toolbox', 'src/toolbox/errors');
   module_load_include('inc', 'entity_toolbox', 'src/toolbox/help');

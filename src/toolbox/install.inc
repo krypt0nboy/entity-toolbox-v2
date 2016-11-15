@@ -33,7 +33,7 @@ function etbx_entity_install($entity_type) {
  * @see _etbx_registry_update()
  */
 function entity_is_installed($entity_type) {
-  $registry = etbx_registry(ETBX_REGISTRY_GET, $entity_type);
+  $registry = etbx_registry_get_info($entity_type);
 
   return !empty($registry['status']) ? $registry['status'] : 0;
 }

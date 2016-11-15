@@ -270,6 +270,9 @@ function entity_toolbox_cache_info() {
   $info[ENTITY_TOOLBOX_DB__CACHE][ETBX_CID__MODULES_PREP]                    = array(
     'expires' => CACHE_PERMANENT,
   );
+  $info[ENTITY_TOOLBOX_DB__CACHE][ETBX_CID__DEPENDENCIES_SORTED]             = array(
+    'expires' => CACHE_PERMANENT,
+  );
 
   return $info;
 }
@@ -306,6 +309,37 @@ function etbx_info_tmp_cache_get($entity_type = NULL, $version = NULL) {
     $entity_type,
     $version
   ));
+
+  return entity_toolbox_cache_get($cid);
+}
+
+/**
+ * Caches entity_toolbox_info.
+ *
+ * @param array       $data
+ *   The data to cache.
+ * @param null|string $entity_type
+ *   The entity type for which to cache the info. NULL to cache all.
+ * @param null|int    $version
+ *   The version for which to cache the info. NULL to cache all.
+ */
+function entity_toolbox_info_cache_set(array $data, $entity_type = NULL, $version = NULL) {
+  $cid = tokens2cid(ENTITY_TOOLBOX__ENTITY_INFO, array($entity_type, $version));
+  entity_toolbox_cache_set($cid, $data);
+}
+
+/**
+ * Retrieves the cache for a given entity toolbox info.
+ *
+ * @param null|string $entity_type
+ *   The entity type.
+ * @param null|string $version
+ *   The entity version.
+ *
+ * @return null|object
+ */
+function entity_toolbox_info_cache_get($entity_type = NULL, $version = NULL) {
+  $cid = tokens2cid(ENTITY_TOOLBOX__ENTITY_INFO, array($entity_type, $version));
 
   return entity_toolbox_cache_get($cid);
 }

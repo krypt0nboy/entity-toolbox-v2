@@ -14,6 +14,10 @@
  */
 define('ETBX_REGISTRY', 'etbx_registry');
 /**
+ * Notification that registry is available.
+ */
+define('ETBX_REGISTRY_AVAILABLE', 1);
+/**
  * Notification for registry to be reset.
  */
 define('ETBX_REGISTRY_NEEDS_RESET', 2);
@@ -36,7 +40,7 @@ define('ETBX_REGISTRY_REBUILD', 3);
 
 /**
  * Loads the entire etbx_registry table.
- * Note that the registry should be retrieved from etbx_registry() only,
+ * Note that the registry should be retrieved from etbx_registry_get_info() only,
  * since it may requires an update.
  *
  * @return array
@@ -55,10 +59,40 @@ function etbx_registry_load() {
 
 /**
  * Loads the entire etbx_registry_versions table.
+ * Note that the registry should be retrieved from etbx_registry_get_info() only,
+ * since it may requires an update.
+ *
+ * @return array
+ *   Returns an associative array where the keys are the entity types, followed by the registered version registry info :
+ *     - entity_type : The entity type.
+ *      - version : The version.
+ *       - filename : The raw info filename.
+ *       - hash : The hash matching the raw info file during its first parsing.
+ *       - status : The status of the version.
+ *
+ * @see etbx_registry_versions_table()
+ */
+function etbx_registry_versions_load() {
+  $query = db_select(ENTITY_TOOLBOX_DB__VERSIONS, 'r')
+    ->fields('r', array())
+    //@todo use groupBy rather than the regrouping below.
+    ->execute();
+
+  $results = array();
+  while (($result = $query->fetchAssoc())) {
+    $results[$result['entity_type']][$result['version']] = $result;
+  }
+
+  return $results;
+}
+
+/**
+ * Loads the entire etbx_registry_versions table.
  * Note that the registry should be retrieved from etbx_versions_registry() only,
  * since it may require an update.
  *
  * @return array
+ * @deprecated duplicate function to remove
  */
 function etbx_versions_registry_load() {
   $query   = db_select(ENTITY_TOOLBOX_DB__VERSIONS, 'r')
@@ -74,35 +108,40 @@ function etbx_versions_registry_load() {
 
 /**
  * Returns the ETBX registry.
- *
- * @param int    $action
- *   The action to perform before returning ETBX registry.
- * @param string $entity_type
- *   The entity type for which to return registry info.
+ * Before loading the registry, checks if it needs to be either reset/rebuilt/updated,
+ * by checking the variable "registry_status".
+ * Should not be called outside function etbx_registry_get_info.
  *
  * @return array
+ *
+ * @see etbx_registry_get_info()
  */
-function etbx_registry($action = ETBX_REGISTRY_GET, $entity_type = NULL) {
+function etbx_registry() {
   // Cached since used very often.
   static $drupal_static_fast;
   $drupal_static_fast['registry'] = &drupal_static(__FUNCTION__, array());
   $registry                       = &$drupal_static_fast['registry'];
-  // Sets the action as reset if the cached registry is empty.
-  $action = $action == ETBX_REGISTRY_GET && empty($registry) ? ETBX_REGISTRY_RESET : $action;
-  switch ($action) {
-    case ETBX_REGISTRY_RESET:
-      $registry = etbx_registry_load();
+  // Gets the registry status.
+  $status = variable_get('registry_status');
+  switch ($status) {
+    // If available, checks if cached.
+    // If not, loads the registry.
+    case ETBX_REGISTRY_AVAILABLE:
+      $registry = empty($registry) ? etbx_registry_load() : $registry;
       break;
-    case ETBX_REGISTRY_REBUILD:
-      etbx_registry_rebuild();
+    // If needs to be reset, reloads the registry.
+    case ETBX_REGISTRY_NEEDS_RESET:
       $registry = etbx_registry_load();
+      variable_set('registry_status', ETBX_REGISTRY_AVAILABLE);
       break;
-    default:
-      // Do nothing if action is GET.
+    // If needs to be rebuilt, updates the registry.
+    case ETBX_REGISTRY_NEEDS_REBUILD:
+      etbx_registry_update();
+      $registry = etbx_registry_load();
       break;
   }
 
-  return isset($entity_type) ? $registry[$entity_type] : $registry;
+  return $registry;
 }
 
 /**
@@ -161,6 +200,8 @@ function etbx_registry_update() {
   // Actually updates the register.
   _etbx_registry_update();
   lock_release(__FUNCTION__);
+  // Sets the registry as available.
+  variable_set('registry_status', ETBX_REGISTRY_AVAILABLE);
   // Updates the registry for etbx entities versions.
   etbx_version_registry_update();
 
@@ -185,7 +226,10 @@ function _etbx_registry_update() {
   $registry = etbx_registry_load();
   // Groups the registry entries by module.
   $registry_by_modules = array_values_group_by($registry, 'module');
-  $to_register         = array();
+  // Prepare the modules implementing etbx
+  //@todo handle excludes for modules that returns error on prepare_check
+  array_map('etbx_module_prepare', $modules);
+  $to_register = array();
   // Foreach module implementing entity toolbox.
   foreach ($modules as $module) {
     $module_enabled = module_is_enabled($module);
@@ -276,10 +320,72 @@ function etbx_entity_register($entity_type, $module) {
  *   Returns TRUE if successfully registered or FALSE otherwise.
  */
 function etbx_update_register($entity_type, $version, $module) {
+  $current_version = $version - 1;
   etbx_version_mkdir($module, $version);
   $raw_info = entity_toolbox_get_raw_info($entity_type, $module);
   raw_entity_toolbox_persistent_write($entity_type, $version, $raw_info, $module);
+  $current_persistent = raw_entity_toolbox_persistent_read($entity_type, $current_version, $module);
+  $diff               = etbx_info_diff($entity_type, $raw_info, $current_persistent);
+  $formatted_diff     = etbx_info_diff_process($entity_type, $module, $raw_info, $current_persistent, $diff);
+  etbx_info_diff_persistent_write($entity_type, $formatted_diff, $current_version, $version, $module);
   entity_version_register($entity_type, $version, $module);
+}
+
+/**
+ * Returns the ETBX versions registry.
+ * Before loading the registry, checks if it needs to be either reset/rebuilt/updated,
+ * by checking the variable "registry_versions_status".
+ * Should not be called outside function etbx_registry_versions_get_info.
+ *
+ * @return array
+ *
+ * @see etbx_registry_versions_get_info()
+ */
+function etbx_registry_versions() {
+  // Cached since used very often.
+  static $drupal_static_fast;
+  $drupal_static_fast['registry'] = &drupal_static(__FUNCTION__, array());
+  $registry                       = &$drupal_static_fast['registry'];
+  // Gets the registry status.
+  $status = variable_get('registry_versions_status');
+  switch ($status) {
+    // If available, checks if cached.
+    // If not, loads the registry.
+    case ETBX_REGISTRY_AVAILABLE:
+      $registry = empty($registry) ? etbx_registry_versions_load() : $registry;
+      break;
+    // If needs to be reset, reloads the registry.
+    case ETBX_REGISTRY_NEEDS_RESET:
+      $registry = etbx_registry_versions_load();
+      break;
+    // If needs to be rebuilt, updates the registry.
+    case ETBX_REGISTRY_NEEDS_REBUILD:
+      etbx_version_registry_update();
+      $registry = etbx_registry_versions_load();
+      break;
+  }
+
+  return $registry;
+}
+
+/**
+ * Returns the ETBX versions registry.
+ *
+ * @param null|string $entity_type
+ *   The entity type.
+ *
+ * @return array|null
+ */
+function etbx_registry_versions_get_info($entity_type = NULL) {
+  // Gets the registry.
+  $registry = etbx_registry_versions();
+
+  if (isset($entity_type)) {
+    return !empty($registry[$entity_type]) ? $registry[$entity_type] : NULL;
+  }
+  else {
+    return $registry;
+  }
 }
 
 /**
@@ -303,6 +409,8 @@ function etbx_version_registry_update() {
   // Actually updates the register.
   _etbx_version_registry_update();
   lock_release(__FUNCTION__);
+
+  return TRUE;
 }
 
 /**
@@ -318,13 +426,13 @@ function _etbx_version_registry_update() {
   // Groups the registry entries by module.
   $registry_by_modules = array_values_group_by($registry, 'module');
   // Loads the versions current registry.
-  $v_registry = etbx_versions_registry_load();
+  $v_registry = etbx_registry_versions_load();
   foreach ($registry_by_modules as $module => $registry_) {
     foreach ($registry_ as $entity_type => $type_registry_) {
       $status          = !empty($type_registry_['status']) ? $type_registry_['status'] : 0;
-      $current_version = !empty($type_registry_['version']) ? $type_registry_['version'] : 0;
+      $current_version = !empty($type_registry_['version']) ? $type_registry_['version'] : INIT_VERSION;
       $has_v_registry  = !empty($v_registry[$entity_type]);
-      $is_registered   = $status && $current_version && $has_v_registry;
+      $is_registered   = $current_version && $has_v_registry;
       // If not registered, registers the versions.
       if (!$is_registered) {
         if (entity_versions_register($entity_type, $module)) {

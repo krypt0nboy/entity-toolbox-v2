@@ -181,7 +181,12 @@ function entity_toolbox_get_info($entity_type = NULL, $update_N = NULL, $reset =
        *   The matching entity type raw info, as retrieved in module_invoke().
        */
       foreach ($data_ as $type => $info) {
-        $processed[$type] = entity_toolbox_info_retrieve($type);
+        // Retrieves the info for every registered version.
+        $versions = entity_toolbox_info_retrieve($type);
+        // Caches each version build.
+        foreach ($versions as $v_ => $v_build_) {
+          entity_toolbox_info_cache_set($v_build_, $type, $v_);
+        }
       }
       $entity_toolbox_info = $processed;
       entity_toolbox_cache_set($CACHEKEY, $entity_toolbox_info);

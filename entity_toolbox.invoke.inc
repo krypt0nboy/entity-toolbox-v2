@@ -54,7 +54,7 @@ function _etbx_diff_process_invoke($entity_type, $module, $new, $old, $diff, &$f
     $functions = get_defined_functions();
     foreach (preg_grep('/_etbx_diff_process$/', $functions['user']) as $function) {
       if (preg_match($regexp, $function, $matches)) {
-        $calls[$matches['component']] = $matches['component'] . '_field_settings_attach_form';
+        $calls[$matches['component']] = $matches['component'] . '_etbx_diff_process';
       }
     }
   }

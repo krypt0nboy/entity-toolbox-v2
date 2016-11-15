@@ -55,6 +55,8 @@ function entity_toolbox_install() {
   variable_set('use_persistent', TRUE);
   // Default status is set to rebuild so that the registry is rebuild once ETBX is installed.
   variable_set('registry_status', ETBX_REGISTRY_NEEDS_REBUILD);
+  // Default status is set to rebuild so that the versions registry is rebuilt once ETBX is installed.
+  variable_set('registry_versions_status', ETBX_REGISTRY_NEEDS_REBUILD);
   variable_set('deliveries_autocheck', FALSE);
   entity_toolbox_update_7001();
   // Updates / builds the registry.

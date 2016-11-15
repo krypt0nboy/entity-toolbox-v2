@@ -12,24 +12,26 @@
 /**
  * Retrieves build and processed entity_toolbox_info data for a given entity type.
  * If not built yet, etbx will build and process it.
+ * Returns only registered versions builds.
  *
  * @param string $entity_type
  *   The entity type.
  *
  * @return array
+ *   An associative array where the key are the version numbers, and the values are the NON AGGREGATED builds.
  */
 function entity_toolbox_info_retrieve($entity_type) {
-  $module = entity_get_module_info_safe($entity_type);
   // Retrieves the registered versions.
   $versions      = entity_registered_versions($entity_type);
   $versions_info = array();
+  // Foreach registered version, retrieves the matching build.
   foreach ($versions as $version) {
     $version_retrieved       = entity_toolbox_info_retrieve_version($entity_type, $version);
     $versions_info[$version] = $version_retrieved;
     etbx_info_tmp_cache_set($entity_type, $version_retrieved);
   }
 
-  return entity_toolbox_info_aggregate($entity_type, $versions_info);
+  return $versions_info;
 }
 
 /**

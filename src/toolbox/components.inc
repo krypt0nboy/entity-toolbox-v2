@@ -283,23 +283,29 @@ function entity_toolbox_get_entities() {
 }
 
 /**
- * @param $entity_type
+ * Returns the module managing an entity type that is not registered yet.
+ *
+ * @param string $entity_type
+ *   The entity type.
  *
  * @return string
  */
-function entity_get_module_info_pre_install($entity_type) {
+function entity_get_module_info_pre_register($entity_type) {
 
 }
 
 /**
  * Returns the module managing an entity type.
+ * Available only for registered entities.
  *
  * @param string $entity_type
  *   The entity type.
+ * @param bool   $reset
+ *   Whether to reset the cache.
  *
  * @return string|null
  */
-function entity_get_module_info($entity_type) {
+function entity_get_module_info($entity_type, $reset = FALSE) {
   // Static cached, since used very often.
   $entities = &drupal_static(__FUNCTION__, array());
   if (empty($entities)) {
@@ -323,7 +329,7 @@ function entity_get_module_info($entity_type) {
 function entity_get_module_info_safe($entity_type) {
   $try = entity_get_module_info($entity_type);
   if (is_null($try)) {
-    return entity_get_module_info_pre_install($entity_type);
+    return entity_get_module_info_pre_register($entity_type);
   }
   else {
     return $try;
